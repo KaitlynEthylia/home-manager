@@ -45,6 +45,13 @@ let
           gtk config generation for {option}`home.pointerCursor`
         '';
       };
+
+      noBackwardsCompat = mkOption {
+        type = types.bool;
+        default = false;
+        example = true;
+        description = "Don't create symlinks in $HOME/.icons";
+      };
     };
   };
 
@@ -147,6 +154,14 @@ in {
         XCURSOR_THEME = mkDefault cfg.name;
       };
 
+      # Add cursor icon link to $XDG_DATA_HOME/icons as well for redundancy.
+      xdg.dataFile."icons/default/index.theme".source =
+        "${defaultIndexThemePackage}/share/icons/default/index.theme";
+      xdg.dataFile."icons/${cfg.name}".source =
+        "${cfg.package}/share/icons/${cfg.name}";
+    }
+
+    (mkIf (cfg.noBackwardsCompat != true) {
       # Add symlink of cursor icon directory to $HOME/.icons, needed for
       # backwards compatibility with some applications. See:
       # https://specifications.freedesktop.org/icon-theme-spec/latest/ar01s03.html
@@ -154,13 +169,7 @@ in {
         "${defaultIndexThemePackage}/share/icons/default/index.theme";
       home.file.".icons/${cfg.name}".source =
         "${cfg.package}/share/icons/${cfg.name}";
-
-      # Add cursor icon link to $XDG_DATA_HOME/icons as well for redundancy.
-      xdg.dataFile."icons/default/index.theme".source =
-        "${defaultIndexThemePackage}/share/icons/default/index.theme";
-      xdg.dataFile."icons/${cfg.name}".source =
-        "${cfg.package}/share/icons/${cfg.name}";
-    }
+    })
 
     (mkIf cfg.x11.enable {
       xsession.initExtra = ''
